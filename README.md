@@ -1,4 +1,4 @@
-FreeRTOS-Template
+home_sensor_slave
 =================
 
-eclipse project template for FreeRTOS with STM32F4
+home sensor slave node (STM32F4)
