@@ -4,6 +4,8 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
+#include "dht.h"
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
@@ -29,7 +31,7 @@ int main(void) {
 }
 
 static void prvPeriphClockConfig(void) {
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOD, ENABLE);
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE | RCC_AHB1Periph_GPIOD, ENABLE);
 }
 
 static void prvGPIOConfig(void) {
@@ -38,16 +40,36 @@ static void prvGPIOConfig(void) {
 	xGPIODInit.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 	xGPIODInit.GPIO_Mode = GPIO_Mode_OUT;
 	xGPIODInit.GPIO_OType = GPIO_OType_PP;
-	xGPIODInit.GPIO_Speed = GPIO_Speed_50MHz;
+	xGPIODInit.GPIO_Speed = GPIO_Speed_2MHz;
 	xGPIODInit.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOD, &xGPIODInit);
+
+	GPIO_InitTypeDef xGPIOEInit;
+	GPIO_StructInit(&xGPIOEInit);
+	xGPIOEInit.GPIO_Pin = GPIO_Pin_2;
+	xGPIOEInit.GPIO_Speed = GPIO_Speed_2MHz;
+	xGPIOEInit.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(GPIOE, &xGPIOEInit);
+
 }
 
 
 void vLEDTask( void *pvParameters ) {
-	const portTickType xDelay = 1000;
+	const portTickType xLedStatusDelay = 1000;
+	const portTickType xDelay = 2000;
+	xDHTData xDHTData;
+	uint8_t ucStatus = 0;
 	while(1) {
-		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+		ucStatus = ucDHTRead(&xDHTData, GPIOE, GPIO_Pin_2);
+
+		if(ucStatus == DHT_OK) {
+			GPIO_SetBits(GPIOD, GPIO_Pin_12);
+		}
+		else {
+			GPIO_SetBits(GPIOD, GPIO_Pin_14);
+		}
+	    vTaskDelay(xLedStatusDelay);
+	    GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_14);
 	    vTaskDelay(xDelay);
 	}
 }
